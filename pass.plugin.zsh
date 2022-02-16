@@ -9,25 +9,25 @@ function __fzfsh_pass() {
 }
 
 function fzfsh::pclip() {
-  entry=${1:-$(__fzfsh_pass)}
+  local entry=${1:-$(__fzfsh_pass)}
   [[ -z "$entry" ]] && return 1
   pass --clip "$entry"
 }
 
 function fzfsh::pedit() {
-  entry=${1:-$(__fzfsh_pass)}
+  local entry=${1:-$(__fzfsh_pass)}
   [[ -z "$entry" ]] && return 1
   pass tailedit "$entry"
 }
 
 function fzfsh::potp() {
-  entry=${1:-$(__fzfsh_pass)}
+  local entry=${1:-$(__fzfsh_pass)}
   [[ -z "$entry" ]] && return 1
   pass otp -c "$entry"
 }
 
 function fzfsh::pshow() {
-  entry=${1:-$(__fzfsh_pass)}
+  local entry=${1:-$(__fzfsh_pass)}
   [[ -z "$entry" ]] && return 1
   pass show "$entry" | bat --language=yaml --paging=always
 }
