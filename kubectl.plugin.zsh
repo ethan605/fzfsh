@@ -5,9 +5,7 @@ fi
 
 # Shared helper to utilise FZF for Kubectl
 function __fzfsh_kubectl() {
-  # convert input args into a single string
-  local query=$(printf ' %q' "$@")
-  fzf --header-lines=1 --query="${query:1}" | cut -d' ' -f1
+  fzf --header-lines=1 | cut -d' ' -f1
 }
 
 # K8s - show an argo rollout
@@ -19,8 +17,10 @@ function fzfsh::kargo() {
     local context=$(kubectx | fzf)
   fi
 
-  local rollout=$(kubectl argo rollouts list rollout --context="$context" | __fzfsh_kubectl "$@")
+  local rollout=${1-}
+  [[ -z "$rollout" ]] && rollout=$(kubectl argo rollouts list rollout --context="$context" | __fzfsh_kubectl)
   [[ -z "$rollout" ]] && return 1
+
   kubectl argo rollouts get rollout "$rollout" --context="$context"
 }
 
@@ -31,7 +31,14 @@ function fzfsh::kexec() {
     local context=$(kubectx | fzf)
   fi
 
-  local pod=$(kubectl get pods --context="$context" | __fzfsh_kubectl "$@")
+  local pod
+
+  if [[ -z "$1" ]]; then
+    pod=$(kubectl get pods --context="$context" | __fzfsh_kubectl)
+  else
+    pod=$(kubectl get pods --context="$context" -lapp="$1" | __fzfsh_kubectl)
+  fi
+
   [[ -z "$pod" ]] && return 1
   kubectl exec -it "$pod" --context="$context" -- bash
 }
@@ -43,8 +50,10 @@ function fzfsh::kpods() {
     local context=$(kubectx | fzf)
   fi
 
-  local app=$(kubectl get services --context="$context" | __fzfsh_kubectl "$@")
+  local app=${1-}
+  [[ -z "$app" ]] && app=$(kubectl get services --context="$context" | __fzfsh_kubectl)
   [[ -z "$app" ]] && return 1
+
   kubectl get pods -lapp="$app" --context="$context"
 }
 
