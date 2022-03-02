@@ -9,6 +9,20 @@ function __fzfsh_chezmoi_parse() {
   echo $files
 }
 
+function fzfsh::cadd() {
+  local options=$(chezmoi status)
+  [[ -z "$options" ]] && return 1
+
+  local files=()
+  local items=$(echo "$options" \
+    | awk '{ print substr($0, 4) }' \
+    | fzf --multi --preview="chezmoi diff $HOME/{} | delta")
+  [[ -z "$items" ]] && return 1
+
+  while read -r item; do files+=("$HOME/$item"); done <<< "$items"
+  chezmoi add $files
+}
+
 function fzfsh::capply() {
   local options=$(chezmoi status)
   [[ -z "$options" ]] && return 1
@@ -36,17 +50,13 @@ function fzfsh::cdiff() {
   local options=$(chezmoi status)
   [[ -z "$options" ]] && return 1
 
-  local files=()
-  local items=$(echo "$options" \
+  local cmd="chezmoi diff $HOME/{} | delta"
+  echo "$options" \
     | awk '{ print substr($0, 4) }' \
-    | fzf --multi --preview="chezmoi diff $HOME/{} | delta")
-  [[ -z "$items" ]] && return 1
-
-  while read -r item; do files+=("$HOME/$item"); done <<< "$items"
-  chezmoi diff $files | delta --side-by-side
+    | fzf --bind="enter:execute($cmd --side-by-side --paging=always)" --preview="$cmd"
 }
 
+alias cadd='fzfsh::cadd'
 alias capply='fzfsh::capply'
 alias cdiff='fzfsh::cdiff'
 alias cedit='fzfsh::cedit'
-alias cstat='chezmoi status'
