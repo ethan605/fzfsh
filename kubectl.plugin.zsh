@@ -1,5 +1,5 @@
-# Ensure kubectl is available
-if (( ! ${+commands[kubectl]} )); then
+# Ensure kubectl and kubectx is available
+if (( ! ${+commands[kubectl]} )) || (( ! ${+commands[kubectx]} )); then
   return 1
 fi
 
@@ -9,7 +9,7 @@ function __fzfsh_kubectl() {
 }
 
 # K8s - show an argo rollout
-function fzfsh::kargo() {
+function fzfsh::kubectl::argo() {
   kubectl argo rollouts version &> /dev/null || return 1
 
   if [[ "$1" == "--context" ]]; then
@@ -25,7 +25,7 @@ function fzfsh::kargo() {
 }
 
 # K8s - ssh to a pod
-function fzfsh::kexec() {
+function fzfsh::kubectl::exec() {
   if [[ "$1" == "--context" ]]; then
     shift
     local context=$(kubectx | fzf)
@@ -44,7 +44,7 @@ function fzfsh::kexec() {
 }
 
 # K8s - list pods
-function fzfsh::kpods() {
+function fzfsh::kubectl::pods() {
   if [[ "$1" == "--context" ]]; then
     shift
     local context=$(kubectx | fzf)
@@ -57,9 +57,9 @@ function fzfsh::kpods() {
   kubectl get pods -lapp="$app" --context="$context"
 }
 
-alias kargo='fzfsh::kargo'
-alias kargo!='fzfsh::kargo --context'
-alias kexec='fzfsh::kexec'
-alias kexec!='fzfsh::kexec --context'
-alias kpods='fzfsh::kpods'
-alias kpods!='fzfsh::kpods --context'
+alias kargo='fzfsh::kubectl::argo'
+alias kargo!='fzfsh::kubectl::argo --context'
+alias kexec='fzfsh::kubectl::exec'
+alias kexec!='fzfsh::kubectl::exec --context'
+alias kpods='fzfsh::kubectl::pods'
+alias kpods!='fzfsh::kubectl::pods --context'

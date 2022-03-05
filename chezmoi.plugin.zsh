@@ -9,7 +9,7 @@ function __fzfsh_chezmoi_parse() {
   echo $files
 }
 
-function fzfsh::cadd() {
+function fzfsh::chezmoi::add() {
   local options=$(chezmoi status)
   [[ -z "$options" ]] && return 1
 
@@ -23,7 +23,7 @@ function fzfsh::cadd() {
   chezmoi add $files
 }
 
-function fzfsh::capply() {
+function fzfsh::chezmoi::apply() {
   local options=$(chezmoi status)
   [[ -z "$options" ]] && return 1
 
@@ -37,7 +37,7 @@ function fzfsh::capply() {
   chezmoi apply $files
 }
 
-function fzfsh::cedit() {
+function fzfsh::chezmoi::edit() {
   local files=()
   local items=$(chezmoi list --include=files | fzf --multi)
   [[ -z "$items" ]] && return 1
@@ -46,7 +46,7 @@ function fzfsh::cedit() {
   chezmoi edit $files
 }
 
-function fzfsh::cdiff() {
+function fzfsh::chezmoi::diff() {
   local options=$(chezmoi status)
   [[ -z "$options" ]] && return 1
 
@@ -56,7 +56,7 @@ function fzfsh::cdiff() {
     | fzf --bind="enter:execute($cmd --side-by-side --paging=always)" --preview="$cmd"
 }
 
-alias cadd='fzfsh::cadd'
-alias capply='fzfsh::capply'
-alias cdiff='fzfsh::cdiff'
-alias cedit='fzfsh::cedit'
+alias cadd='fzfsh::chezmoi::add'
+alias capply='fzfsh::chezmoi::apply'
+alias cdiff='fzfsh::chezmoi::diff'
+alias cedit='fzfsh::chezmoi::edit'
