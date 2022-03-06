@@ -23,13 +23,7 @@ __fzfsh_git_diff_pager=$(git config pager.diff || echo "$__fzfsh_git_pager")
 __fzfsh_git_ignore_pager="bat -l gitignore --color=always"
 __fzfsh_git_log_format="%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset"
 
-function __fzfsh_copy_cmd() {
-  if [[ $(uname) == "Linux" ]]; then
-    echo "wl-copy"
-  else
-    echo "pbcopy"
-  fi
-}
+__fzfsh_copy_cmd=$([[ $(uname) == "Linux" ]] && echo "wl-copy" || echo "pbcopy")
 
 function __fzfsh_git_inside_work_tree() { git rev-parse --is-inside-work-tree >/dev/null; }
 
@@ -163,6 +157,22 @@ function fzfsh::git::diff() {
     FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd"
 }
 
+function fzfsh::git::log() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*") # extract files parameters for `git show` command
+  local cmd="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $forgit_show_pager"
+  local opts="
+    $FZFSH_GIT_FZF_OPTS
+    +s +m --tiebreak=index
+    --bind=\"enter:execute($cmd --side-by-side --paging=always)\"
+    --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)\"
+  "
+
+  git log --graph --color=always --format="$__fzfsh_git_log_format" $* |
+    FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd"
+}
+
 function fzfsh::git::switch() {
   __fzfsh_git_inside_work_tree || return 1
 
@@ -212,7 +222,7 @@ alias gbD='fzfsh::git::delete_branch'
 alias gclean='fzfsh::git::clean'
 alias gco='fzfsh::git::checkout_commit'
 alias gd='fzfsh::git::diff'
-#alias glo='fzfsh::git::log'
+alias glo='fzfsh::git::log'
 #alias gm='fzfsh::git::merge'
 #alias grb='fzfsh::git::rebase'
 #alias grs='fzfsh::git::restore'
