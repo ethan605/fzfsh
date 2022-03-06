@@ -25,7 +25,7 @@ __fzfsh_git_log_format="%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset"
 
 __fzfsh_copy_cmd=$([[ $(uname) == "Linux" ]] && echo "wl-copy" || echo "pbcopy")
 
-function __fzfsh_git_inside_work_tree() { git rev-parse --is-inside-work-tree >/dev/null; }
+function __fzfsh_git_inside_work_tree() { git rev-parse --is-inside-work-tree > /dev/null; }
 
 function fzfsh::git::add() {
   __fzfsh_git_inside_work_tree || return 1
@@ -151,7 +151,7 @@ function fzfsh::git::log() {
 
   # Extract files parameters for `git show` command
   local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*")
-  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $forgit_show_pager"
+  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $__fzfsh_git_show_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS
     +s +m --tiebreak=index
@@ -243,6 +243,19 @@ function fzfsh::git::restore() {
   echo "$files" | tr '\n' '\0' | xargs -0 -I% git restore % && git status -su
 }
 
+function fzfsh::git::stash_show() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  local preview="echo {} | cut -d: -f1 | xargs -I% git stash show --color=always --ext-diff % | $__fzfsh_git_diff_pager"
+  local opts="
+    $FZFSH_GIT_FZF_OPTS
+    +s +m -0
+    --tiebreak=index --bind=\"enter:execute($preview --side-by-side --paging=always)\"
+  "
+
+  git stash list | FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
+}
+
 function fzfsh::git::switch() {
   __fzfsh_git_inside_work_tree || return 1
 
@@ -296,5 +309,5 @@ alias glo='fzfsh::git::log'
 alias gm='fzfsh::git::merge'
 alias grb='fzfsh::git::rebase'
 alias grs='fzfsh::git::restore'
-#alias gss='fzfsh::git::stash_show'
+alias gss='fzfsh::git::stash_show'
 alias gsw='fzfsh::git::switch'
