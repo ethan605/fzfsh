@@ -47,7 +47,7 @@ function fzfsh::git::add() {
 
   local preview="
     file=\$(echo {} | $extract)
-    if (git status -s -- \$file | grep '^??') &>/dev/null; then  # diff with /dev/null for untracked files
+    if (git status --short -- \$file | grep '^??') &>/dev/null; then  # diff with /dev/null for untracked files
       git diff --color=always --no-index -- /dev/null \$file | $__fzfsh_git_diff_pager | sed '2 s/added:/untracked:/'
     else
       git diff --color=always -- \$file | $__fzfsh_git_diff_pager
@@ -104,7 +104,7 @@ function fzfsh::git::clean() {
   )
 
   [[ ! -n "$files" ]] && return 0
-  echo "$files" | tr '\n' '\0' | xargs -0 -I% git clean -xdff '%' && git status --short
+  echo "$files" | tr '\n' '\0' | xargs -0 -I% git clean -xdff '%' && git status -su
 }
 
 function fzfsh::git::checkout_commit() {
@@ -159,7 +159,7 @@ function fzfsh::git::log() {
     --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)\"
   "
 
-  git log --graph --color=always --format="$__fzfsh_git_log_format" $* |
+  git log --all --decorate --graph --color=always --format="$__fzfsh_git_log_format" $* |
     FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
 }
 
@@ -169,7 +169,7 @@ function fzfsh::git::merge() {
   # Merge branch if passed as arguments
   [[ $# -ne 0 ]] && { git merge "$@"; return $?; }
 
-  local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
+  local preview="git log {1} --abbrev-commit --decorate --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
 
   local branch=$(
@@ -294,11 +294,9 @@ alias gfl='git fetch --prune && git pull origin $(git branch --show-current)'
 alias ggl='git pull origin $(git branch --show-current)'
 alias ggp='git push origin $(git branch --show-current)'
 alias ggpu='git push --set-upstream origin $(git branch --show-current)'
-alias glgg='git log --all --decorate --graph'
-alias glgo='git log --all --decorate --graph --oneline'
 alias gpush='git push --force'
 alias greset='git reset --hard origin $(git branch --show-current)'
-alias gst='git status'
+alias gst='git status --short --untracked-files=all'
 
 alias ga='fzfsh::git::add'
 alias gbD='fzfsh::git::delete_branch'
