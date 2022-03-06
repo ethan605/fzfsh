@@ -59,15 +59,14 @@ function fzfsh::git::add() {
 
   local files=$(
     git -c color.status=always -c status.relativePaths=true status -su |
-    grep -F -e "$changed" -e "$unmerged" -e "$untracked" |
-    sed -E 's/^(..[^[:space:]]*)[[:space:]]+(.*)$/[\1]  \2/' |
-    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
-    sh -c "$extract"
+      grep -F -e "$changed" -e "$unmerged" -e "$untracked" |
+      sed -E 's/^(..[^[:space:]]*)[[:space:]]+(.*)$/[\1]  \2/' |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      sh -c "$extract"
   )
 
-  [[ ! -n "$files" ]] && echo 'Nothing to add.'
-  echo "$files" | tr '\n' '\0' | xargs -0 -I% git add % \
-    && git status -su
+  [[ ! -n "$files" ]] && return 0
+  echo "$files" | tr '\n' '\0' | xargs -0 -I% git add % && git status -su
 }
 
 function fzfsh::git::delete_branch() {
@@ -78,14 +77,44 @@ function fzfsh::git::delete_branch() {
 
   local cmd="git branch --color=always | sort -k1.1,1.1 -r"
   local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
+
   local opts="
     $FZFSH_GIT_FZF_OPTS
     +s -m --tiebreak=index --header-lines=1
   "
-  local branches="$(eval "$cmd" | FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" | awk '{print $0}')"
+
+  local branches=$(
+    eval "$cmd" |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      awk '{print $0}'
+  )
 
   [[ -z "$branches" ]] && return 0
-  [[ -n "$branches" ]] && echo "$branches" | sed -r 's/^\s+//gi' | tr '\n' '\0' | xargs -0 -I% git branch --delete --force %
+  [[ ! -n "$branches" ]] && return 1
+  echo "$branches" | sed -r 's/^\s+//gi' | tr '\n' '\0' | xargs -0 -I% git branch --delete --force %
+}
+
+function fzfsh::git::clean() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  # Clean files if passed as arguments
+  [[ $# -ne 0 ]] && { git clean -xdff "$@"; return $?; }
+
+  local opts="
+    $FZFSH_GIT_FZF_OPTS
+    -m -0
+  "
+
+  # Note: Postfix '/' in directory path should be removed. Otherwise the directory itself will not be removed.
+  local files=$(
+    git clean -xdffn "$@" |
+      sed 's/^Would remove //' |
+      FZF_DEFAULT_OPTS="$opts" fzf |
+      sed 's#/$##'
+  )
+
+  [[ ! -n "$files" ]] && return 0
+  echo "$files" | tr '\n' '\0' | xargs -0 -I% git clean -xdff '%' && git status --short
 }
 
 alias g=git
@@ -106,7 +135,7 @@ alias gst='git status'
 
 alias ga='fzfsh::git::add'
 alias gbD='fzfsh::git::delete_branch'
-#alias gclean='fzfsh::git::clean'
+alias gclean='fzfsh::git::clean'
 #alias gco='fzfsh::git::checkout'
 #alias gd='fzfsh::git::diff'
 #alias glo='fzfsh::git::log'
