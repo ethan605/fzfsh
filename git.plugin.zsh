@@ -8,6 +8,7 @@ __fzfsh_git_pager=$(git config core.pager || echo 'delta')
 __fzfsh_git_show_pager=$(git config pager.show || echo "$__fzfsh_git_pager")
 __fzfsh_git_diff_pager=$(git config pager.diff || echo "$__fzfsh_git_pager")
 __fzfsh_git_ignore_pager="bat -l gitignore --color=always"
+__fzfsh_git_log_format="%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset"
 
 FZFSH_GIT_FZF_OPTS="
   $FZF_DEFAULT_OPTS
@@ -69,6 +70,24 @@ function fzfsh::git::add() {
     && git status -su
 }
 
+function fzfsh::git::delete_branch() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  # Delete branches if passed as arguments
+  [[ $# -ne 0 ]] && { git branch --delete --force "$@"; return $?; }
+
+  local cmd="git branch --color=always | sort -k1.1,1.1 -r"
+  local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
+  local opts="
+    $FZFSH_GIT_FZF_OPTS
+    +s -m --tiebreak=index --header-lines=1
+  "
+  local branches="$(eval "$cmd" | FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" | awk '{print $0}')"
+
+  [[ -z "$branches" ]] && return 0
+  [[ -n "$branches" ]] && echo "$branches" | sed -r 's/^\s+//gi' | tr '\n' '\0' | xargs -0 -I% git branch --delete --force %
+}
+
 alias g=git
 alias gaa='git add --all'
 alias gau='git add --update'
@@ -86,13 +105,13 @@ alias greset='git reset --hard origin $(git branch --show-current)'
 alias gst='git status'
 
 alias ga='fzfsh::git::add'
-#alias gbD='fzfsh::git::delete::branch'
+alias gbD='fzfsh::git::delete_branch'
 #alias gclean='fzfsh::git::clean'
-#alias gco='fzfsh::git::checkout::commit'
+#alias gco='fzfsh::git::checkout'
 #alias gd='fzfsh::git::diff'
 #alias glo='fzfsh::git::log'
 #alias gm='fzfsh::git::merge'
 #alias grb='fzfsh::git::rebase'
 #alias grs='fzfsh::git::restore'
-#alias gss='fzfsh::git::stash::show'
+#alias gss='fzfsh::git::stash_show'
 #alias gsw='fzfsh::git::switch'
