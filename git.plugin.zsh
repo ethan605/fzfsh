@@ -117,6 +117,24 @@ function fzfsh::git::clean() {
   echo "$files" | tr '\n' '\0' | xargs -0 -I% git clean -xdff '%' && git status --short
 }
 
+function fzfsh::git::diff() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  # Show diff if passed as arguments
+  [[ $# -ne 0 ]] && git diff "$@" | eval "$__fzfsh_git_diff_pager --side-by-side" && return
+
+  local repo="$(git rev-parse --show-toplevel)"
+  local cmd="echo {} | sed 's/.*]  //' | xargs -I% git diff --color=always -- '$repo/%' | $__fzfsh_git_diff_pager"
+  local opts="
+    $FZFSH_GIT_FZF_OPTS
+    +m -0 --bind=\"enter:execute($cmd --side-by-side --paging=always)\"
+  "
+
+  git diff --name-status |
+    sed -E 's/^(.)[[:space:]]+(.*)$/[\1]  \2/' |
+    FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd"
+}
+
 alias g=git
 alias gaa='git add --all'
 alias gau='git add --update'
@@ -137,7 +155,7 @@ alias ga='fzfsh::git::add'
 alias gbD='fzfsh::git::delete_branch'
 alias gclean='fzfsh::git::clean'
 #alias gco='fzfsh::git::checkout'
-#alias gd='fzfsh::git::diff'
+alias gd='fzfsh::git::diff'
 #alias glo='fzfsh::git::log'
 #alias gm='fzfsh::git::merge'
 #alias grb='fzfsh::git::rebase'
