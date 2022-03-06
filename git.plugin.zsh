@@ -183,6 +183,31 @@ function fzfsh::git::merge() {
   git merge "$branch"
 }
 
+function fzfsh::git::rebase() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  # Rebase if passed as arguments
+  [[ $# -ne 0 ]] && { git rebase -i "$@"; return $?; }
+
+  # Extract files parameters for `git show` command
+  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*")
+  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $__fzfsh_git_show_pager"
+  local opts="
+    $FZFSH_GIT_FZF_OPTS
+    +s +m --tiebreak=index
+    --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)\"
+  "
+  local commit=$(
+    git log --graph --color=always --format="$__fzfsh_git_log_format" $* |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      grep -Eo '[a-f0-9]+' |
+      head -1
+  )
+
+  [[ -z "$commit" ]] && return 1
+  git rebase -i "$commit"
+}
+
 function fzfsh::git::switch() {
   __fzfsh_git_inside_work_tree || return 1
 
@@ -234,7 +259,7 @@ alias gco='fzfsh::git::checkout_commit'
 alias gd='fzfsh::git::diff'
 alias glo='fzfsh::git::log'
 alias gm='fzfsh::git::merge'
-#alias grb='fzfsh::git::rebase'
+alias grb='fzfsh::git::rebase'
 #alias grs='fzfsh::git::restore'
 #alias gss='fzfsh::git::stash_show'
 alias gsw='fzfsh::git::switch'
