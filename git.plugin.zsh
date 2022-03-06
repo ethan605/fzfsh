@@ -54,10 +54,7 @@ function fzfsh::git::add() {
     fi
   "
 
-  local opts="
-    $FZFSH_GIT_FZF_OPTS
-    -0 -m --nth 2..,..
-  "
+  local opts="$FZFSH_GIT_FZF_OPTS -0 -m --nth 2..,.."
 
   local files=$(
     git -c color.status=always -c status.relativePaths=true status -su |
@@ -77,22 +74,16 @@ function fzfsh::git::delete_branch() {
   # Delete branches if passed as arguments
   [[ $# -ne 0 ]] && { git branch --delete --force "$@"; return $?; }
 
-  local cmd="git branch --color=always | sort -k1.1,1.1 -r"
   local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
-
-  local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +s -m --tiebreak=index --header-lines=1
-  "
+  local opts="$FZFSH_GIT_FZF_OPTS +s -m --tiebreak=index --header-lines=1"
 
   local branches=$(
-    eval "$cmd" |
+    git branch --color=always | sort -k1.1,1.1 -r |
       FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
       awk '{print $0}'
   )
 
-  [[ -z "$branches" ]] && return 0
-  [[ ! -n "$branches" ]] && return 1
+  [[ -z "$branches" ]] && return 1
   echo "$branches" | sed -r 's/^\s+//gi' | tr '\n' '\0' | xargs -0 -I% git branch --delete --force %
 }
 
@@ -102,10 +93,7 @@ function fzfsh::git::clean() {
   # Clean files if passed as arguments
   [[ $# -ne 0 ]] && { git clean -xdff "$@"; return $?; }
 
-  local opts="
-    $FZFSH_GIT_FZF_OPTS
-    -m -0
-  "
+  local opts="$FZFSH_GIT_FZF_OPTS -m -0"
 
   # Note: Postfix '/' in directory path should be removed. Otherwise the directory itself will not be removed.
   local files=$(
@@ -125,7 +113,7 @@ function fzfsh::git::checkout_commit() {
   # Checkout commit if passed as arguments
   [[ $# -ne 0 ]] && { git checkout "$@"; return $?; }
 
-  local cmd="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
+  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS
     +s +m --tiebreak=index
@@ -133,7 +121,7 @@ function fzfsh::git::checkout_commit() {
   "
 
   git log --graph --color=always --format="$__fzfsh_git_log_format" |
-    FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd" |
+    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
     grep -Eo '[a-f0-9]+' |
     head -1 |
     xargs -I% git checkout % --
@@ -146,31 +134,52 @@ function fzfsh::git::diff() {
   [[ $# -ne 0 ]] && { git diff "$@" | eval "$__fzfsh_git_diff_pager --side-by-side"; return $? }
 
   local repo="$(git rev-parse --show-toplevel)"
-  local cmd="echo {} | sed 's/.*]  //' | xargs -I% git diff --color=always -- '$repo/%' | $__fzfsh_git_diff_pager"
+  local preview="echo {} | sed 's/.*]  //' | xargs -I% git diff --color=always -- '$repo/%' | $__fzfsh_git_diff_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS
-    +m -0 --bind=\"enter:execute($cmd --side-by-side --paging=always)\"
+    +m -0
+    --bind=\"enter:execute($preview --side-by-side --paging=always)\"
   "
 
   git diff --name-status |
     sed -E 's/^(.)[[:space:]]+(.*)$/[\1]  \2/' |
-    FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd"
+    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
 }
 
 function fzfsh::git::log() {
   __fzfsh_git_inside_work_tree || return 1
 
   local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*") # extract files parameters for `git show` command
-  local cmd="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $forgit_show_pager"
+  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $forgit_show_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS
     +s +m --tiebreak=index
-    --bind=\"enter:execute($cmd --side-by-side --paging=always)\"
+    --bind=\"enter:execute($preview --side-by-side --paging=always)\"
     --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)\"
   "
 
   git log --graph --color=always --format="$__fzfsh_git_log_format" $* |
-    FZF_DEFAULT_OPTS="$opts" fzf --preview="$cmd"
+    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
+}
+
+function fzfsh::git::merge() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  # Merge branch if passed as arguments
+  [[ $# -ne 0 ]] && { git merge "$@"; return $?; }
+
+  local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
+  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
+
+  local branch=$(
+    git branch --color=always --all |
+      sort -k1.1,1.1 -r |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      awk '{print $1}'
+  )
+  [[ -z "$branch" ]] && return 1
+
+  git merge "$branch"
 }
 
 function fzfsh::git::switch() {
@@ -179,15 +188,15 @@ function fzfsh::git::switch() {
   # Switch if passed as arguments
   [[ $# -ne 0 ]] && { git switch "$@"; return $?; }
 
-  local cmd="git branch --color=always --all | sort -k1.1,1.1 -r"
   local preview="git log {1} --graph --pretty=format:'$forgit_log_format' --color=always --abbrev-commit --date=relative"
+  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
 
-  local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +s +m --tiebreak=index --header-lines=1
-  "
-
-  local branch="$(eval "$cmd" | FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" | awk '{print $1}')"
+  local branch=$(
+    git branch --color=always --all |
+      sort -k1.1,1.1 -r |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      awk '{print $1}'
+  )
   [[ -z "$branch" ]] && return 1
 
   # Only track for branches started with "remotes/"
@@ -223,7 +232,7 @@ alias gclean='fzfsh::git::clean'
 alias gco='fzfsh::git::checkout_commit'
 alias gd='fzfsh::git::diff'
 alias glo='fzfsh::git::log'
-#alias gm='fzfsh::git::merge'
+alias gm='fzfsh::git::merge'
 #alias grb='fzfsh::git::rebase'
 #alias grs='fzfsh::git::restore'
 #alias gss='fzfsh::git::stash_show'
