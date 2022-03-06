@@ -149,7 +149,8 @@ function fzfsh::git::diff() {
 function fzfsh::git::log() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*") # extract files parameters for `git show` command
+  # Extract files parameters for `git show` command
+  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*")
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $forgit_show_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS
@@ -177,8 +178,8 @@ function fzfsh::git::merge() {
       FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
       awk '{print $1}'
   )
-  [[ -z "$branch" ]] && return 1
 
+  [[ -z "$branch" ]] && return 1
   git merge "$branch"
 }
 
@@ -188,7 +189,7 @@ function fzfsh::git::switch() {
   # Switch if passed as arguments
   [[ $# -ne 0 ]] && { git switch "$@"; return $?; }
 
-  local preview="git log {1} --graph --pretty=format:'$forgit_log_format' --color=always --abbrev-commit --date=relative"
+  local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
 
   local branch=$(
