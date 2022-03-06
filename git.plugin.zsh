@@ -208,6 +208,41 @@ function fzfsh::git::rebase() {
   git rebase -i "$commit"
 }
 
+function fzfsh::git::restore() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  # Add files if passed as arguments
+  [[ $# -ne 0 ]] && { git restore "$@"; git status -su; return }
+
+  local changed=$(git config --get-color color.status.changed red)
+
+  # NOTE: paths listed by 'git status -su' mixed with quoted and unquoted style
+  # remove indicators | remove original path for rename case | remove surrounding quotes
+  local extract="
+    sed 's/^.*]  //' |
+    sed 's/.* -> //' |
+    sed -e 's/^\\\"//' -e 's/\\\"\$//'
+  "
+
+  local preview="
+    file=\$(echo {} | $extract)
+    git diff --color=always -- \$file | $__fzfsh_git_diff_pager
+  "
+
+  local opts="$FZFSH_GIT_FZF_OPTS -0 -m --nth 2..,.."
+
+  local files=$(
+    git -c color.status=always -c status.relativePaths=true status -su |
+      grep -F -e "$changed" |
+      sed -E 's/^(..[^[:space:]]*)[[:space:]]+(.*)$/[\1]  \2/' |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      sh -c "$extract"
+  )
+
+  [[ -z "$files" ]] && return 1
+  echo "$files" | tr '\n' '\0' | xargs -0 -I% git restore % && git status -su
+}
+
 function fzfsh::git::switch() {
   __fzfsh_git_inside_work_tree || return 1
 
@@ -260,6 +295,6 @@ alias gd='fzfsh::git::diff'
 alias glo='fzfsh::git::log'
 alias gm='fzfsh::git::merge'
 alias grb='fzfsh::git::rebase'
-#alias grs='fzfsh::git::restore'
+alias grs='fzfsh::git::restore'
 #alias gss='fzfsh::git::stash_show'
 alias gsw='fzfsh::git::switch'
