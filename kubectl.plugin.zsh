@@ -59,16 +59,25 @@ function fzfsh::kubectl::exec() {
 
 # K8s - list pods
 function fzfsh::kubectl::pods() {
-  if [[ "$1" == "--context" ]]; then
-    shift
-    local context=$(kubectx | fzf)
-  fi
+  local app=""
+  local context=""
+  local watch=false
 
-  local app=${1-}
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --context) context=$(kubectx | fzf); shift ;;
+      --watch) watch=true; shift ;;
+      *) app="$1"; shift ;;
+    esac
+  done
+
   [[ -z "$app" ]] && app=$(kubectl get services --context="$context" | __fzfsh_kubectl)
   [[ -z "$app" ]] && return 1
 
-  kubectl get pods -lapp="$app" --context="$context"
+  local cmd="kubectl get pods --context=$context -lapp=$app"
+
+  [[ "$watch" = true ]] && cmd="$__fzfsh_watch $cmd"
+  eval "$cmd"
 }
 
 alias kargo='fzfsh::kubectl::argo'
@@ -78,3 +87,4 @@ alias kexec='fzfsh::kubectl::exec'
 alias kexec!='fzfsh::kubectl::exec --context'
 alias kpods='fzfsh::kubectl::pods'
 alias kpods!='fzfsh::kubectl::pods --context'
+alias kpods~='fzfsh::kubectl::pods --context --watch'
