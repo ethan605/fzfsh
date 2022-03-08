@@ -7,7 +7,7 @@ __fzfsh_watch="watch --color --differences --errexit --exec"
 
 # Shared helper to utilise FZF for Kubectl
 function __fzfsh_kubectl() {
-  fzf --header-lines=1 | cut -d' ' -f1
+  fzf --header-lines=1 | awk '{ print $1 }'
 }
 
 # K8s - show an argo rollout
@@ -61,12 +61,13 @@ function fzfsh::kubectl::exec() {
 function fzfsh::kubectl::logs() {
   local app=""
   local args=()
+  local by_pod=false
   local context=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --context) context=$(kubectx | fzf); shift ;;
-      --watch) watch=true; shift ;;
+      --pod) by_pod=true; shift ;;
       -*|--*) args+=("$1"); shift ;;
       *) app="$1"; shift ;;
     esac
@@ -75,7 +76,14 @@ function fzfsh::kubectl::logs() {
   [[ -z "$app" ]] && app=$(kubectl get services --context="$context" | __fzfsh_kubectl)
   [[ -z "$app" ]] && return 1
 
-  kubectl logs "${args[@]}" --context="$context" -lapp="$app"
+  if [[ "$by_pod" = true ]]; then
+    local pod=$(kubectl get pods --context="$context" -lapp="$app" | __fzfsh_kubectl)
+    [[ -z "$pod" ]] && return 1
+
+    kubectl logs "${args[@]}" --context="$context" "$pod"
+  else
+    kubectl logs "${args[@]}" --context="$context" -lapp="$app" --all-containers=true
+  fi
 }
 
 # K8s - list pods
