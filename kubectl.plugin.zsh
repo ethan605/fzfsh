@@ -3,6 +3,8 @@ if (( ! ${+commands[kubectl]} )) || (( ! ${+commands[kubectx]} )); then
   return 1
 fi
 
+__watch_cmd="watch --color --differences --errexit --exec"
+
 # Shared helper to utilise FZF for Kubectl
 function __fzfsh_kubectl() {
   fzf --header-lines=1 | cut -d' ' -f1
@@ -10,18 +12,27 @@ function __fzfsh_kubectl() {
 
 # K8s - show an argo rollout
 function fzfsh::kubectl::argo() {
-  kubectl argo rollouts version &> /dev/null || return 1
+  kubectl argo rollouts version &> /dev/null || { echo "argo-rollouts not found"; return 1 }
 
-  if [[ "$1" == "--context" ]]; then
-    shift
-    local context=$(kubectx | fzf)
-  fi
+  local rollout=""
+  local context=""
+  local watch=false
 
-  local rollout=${1-}
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --context) context=$(kubectx | fzf); shift ;;
+      --watch) watch=true; shift ;;
+      *) rollout="$1"; shift ;;
+    esac
+  done
+
   [[ -z "$rollout" ]] && rollout=$(kubectl argo rollouts list rollout --context="$context" | __fzfsh_kubectl)
   [[ -z "$rollout" ]] && return 1
 
-  kubectl argo rollouts get rollout "$rollout" --context="$context"
+  local cmd="kubectl argo rollouts get --context=$context rollout $rollout"
+
+  [[ "$watch" = true ]] && cmd="$__watch_cmd $cmd"
+  eval "$cmd"
 }
 
 # K8s - ssh to a pod
@@ -59,6 +70,7 @@ function fzfsh::kubectl::pods() {
 
 alias kargo='fzfsh::kubectl::argo'
 alias kargo!='fzfsh::kubectl::argo --context'
+alias kargo~='fzfsh::kubectl::argo --context --watch'
 alias kexec='fzfsh::kubectl::exec'
 alias kexec!='fzfsh::kubectl::exec --context'
 alias kpods='fzfsh::kubectl::pods'
