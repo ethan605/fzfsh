@@ -3,7 +3,7 @@ if (( ! ${+commands[kubectl]} )) || (( ! ${+commands[kubectx]} )); then
   return 1
 fi
 
-__watch_cmd="watch --color --differences --errexit --exec"
+__fzfsh_watch="watch --color --differences --errexit --exec"
 
 # Shared helper to utilise FZF for Kubectl
 function __fzfsh_kubectl() {
@@ -31,23 +31,26 @@ function fzfsh::kubectl::argo() {
 
   local cmd="kubectl argo rollouts get --context=$context rollout $rollout"
 
-  [[ "$watch" = true ]] && cmd="$__watch_cmd $cmd"
+  [[ "$watch" = true ]] && cmd="$__fzfsh_watch $cmd"
   eval "$cmd"
 }
 
 # K8s - ssh to a pod
 function fzfsh::kubectl::exec() {
-  if [[ "$1" == "--context" ]]; then
-    shift
-    local context=$(kubectx | fzf)
-  fi
+  local app=""
+  local context=""
 
-  local pod
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --context) context=$(kubectx | fzf); shift ;;
+      *) app="$1"; shift ;;
+    esac
+  done
 
-  if [[ -z "$1" ]]; then
+  if [[ -z "$app" ]]; then
     pod=$(kubectl get pods --context="$context" | __fzfsh_kubectl)
   else
-    pod=$(kubectl get pods --context="$context" -lapp="$1" | __fzfsh_kubectl)
+    pod=$(kubectl get pods --context="$context" -lapp="$app" | __fzfsh_kubectl)
   fi
 
   [[ -z "$pod" ]] && return 1
