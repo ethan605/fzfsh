@@ -32,7 +32,14 @@ function fzfsh::pass::show() {
   pass show "$entry" | bat --language=yaml --paging=always
 }
 
+function fzfsh::pass::update() {
+  local entry=${1:-$(__fzfsh_pass)}
+  [[ -z "$entry" ]] && return 1
+  pass update -E "$entry"
+}
+
 alias pclip='fzfsh::pass::clip'
 alias pedit='fzfsh::pass::edit'
 alias potp='fzfsh::pass::otp'
 alias pshow='fzfsh::pass::show'
+alias pupdate='fzfsh::pass::update'
