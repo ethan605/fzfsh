@@ -1,9 +1,7 @@
-# Ensure kubectl and kubectx is available
+# Ensure kubectl and kubectx are available
 if (( ! ${+commands[kubectl]} )) || (( ! ${+commands[kubectx]} )); then
   return 1
 fi
-
-__fzfsh_watch="watch --color --differences --errexit --exec"
 
 # Shared helper to utilise FZF for Kubectl
 function __fzfsh_kubectl() {
@@ -16,23 +14,20 @@ function fzfsh::kubectl::argo() {
 
   local rollout=""
   local context=""
-  local watch=false
+  local extra=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --context) context=$(kubectx | fzf); shift ;;
-      --watch) watch=true; shift ;;
+      --context) context="--context=$(kubectx | fzf)"; shift ;;
+      --watch) extra+="--watch "; shift ;;
       *) rollout="$1"; shift ;;
     esac
   done
 
-  [[ -z "$rollout" ]] && rollout=$(kubectl argo rollouts list rollout --context="$context" | __fzfsh_kubectl)
+  [[ -z "$rollout" ]] && rollout=$(kubectl argo rollouts list rollout "$context" | __fzfsh_kubectl)
   [[ -z "$rollout" ]] && return 1
 
-  local cmd="kubectl argo rollouts get --context=$context rollout $rollout"
-
-  [[ "$watch" = true ]] && cmd="$__fzfsh_watch $cmd"
-  eval "$cmd"
+  eval "kubectl argo rollouts get rollout $rollout $context $extra"
 }
 
 # K8s - ssh to a pod
@@ -54,7 +49,7 @@ function fzfsh::kubectl::exec() {
   fi
 
   [[ -z "$pod" ]] && return 1
-  kubectl exec -it "$pod" --context="$context" -- bash
+  kubectl exec -it "$pod" --context="$context" -- /bin/bash
 }
 
 # K8s - logs
@@ -90,32 +85,27 @@ function fzfsh::kubectl::logs() {
 function fzfsh::kubectl::pods() {
   local app=""
   local context=""
-  local watch=false
+  local extra=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --context) context=$(kubectx | fzf); shift ;;
-      --watch) watch=true; shift ;;
+      --context) context="--context=$(kubectx | fzf)"; shift ;;
+      --watch) extra+="--watch "; shift ;;
       *) app="$1"; shift ;;
     esac
   done
 
-  [[ -z "$app" ]] && app=$(kubectl get services --context="$context" | __fzfsh_kubectl)
+  [[ -z "$app" ]] && app=$(kubectl get services "$context" | __fzfsh_kubectl)
   [[ -z "$app" ]] && return 1
 
-  local cmd="kubectl get pods --context=$context -lapp=$app"
-
-  [[ "$watch" = true ]] && cmd="$__fzfsh_watch $cmd"
-  eval "$cmd"
+  eval "kubectl get pods -lapp=$app $context $extra"
 }
 
 alias kargo='fzfsh::kubectl::argo'
 alias kargo!='fzfsh::kubectl::argo --context'
-alias kargo~='fzfsh::kubectl::argo --context --watch'
 alias kexec='fzfsh::kubectl::exec'
 alias kexec!='fzfsh::kubectl::exec --context'
 alias klogs='fzfsh::kubectl::logs'
 alias klogs!='fzfsh::kubectl::logs --context'
 alias kpods='fzfsh::kubectl::pods'
 alias kpods!='fzfsh::kubectl::pods --context'
-alias kpods~='fzfsh::kubectl::pods --context --watch'

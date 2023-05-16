@@ -1,4 +1,4 @@
-# Ensure git and delta is available
+# Ensure git and delta are available
 if (( ! ${+commands[git]} )) || (( ! ${+commands[delta]} )); then
   return 1
 fi
@@ -284,6 +284,7 @@ function fzfsh::git::switch() {
   fi
 }
 
+# Regular aliases
 alias g=git
 alias gaa='git add --all'
 alias gau='git add --update'
@@ -294,10 +295,11 @@ alias gfl='git fetch --prune && git pull origin $(git branch --show-current)'
 alias ggl='git pull origin $(git branch --show-current)'
 alias ggp='git push origin $(git branch --show-current)'
 alias ggpu='git push --set-upstream origin $(git branch --show-current)'
-alias gpush='git push --force'
-alias greset='git reset --hard origin $(git branch --show-current)'
 alias gst='git status --short --untracked-files=all'
+alias gpush!='git push --force'
+alias greset!='git reset --hard origin $(git branch --show-current)'
 
+# FZF aliases
 alias ga='fzfsh::git::add'
 alias gbD='fzfsh::git::delete_branch'
 alias gclean='fzfsh::git::clean'
