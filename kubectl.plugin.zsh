@@ -19,12 +19,12 @@ function fzfsh::kubectl::argo() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --context) context="--context=$(kubectx | fzf)"; shift ;;
-      --watch) extra+="--watch "; shift ;;
+      -*|--*) extra+="$1 "; shift ;;
       *) rollout="$1"; shift ;;
     esac
   done
 
-  [[ -z "$rollout" ]] && rollout=$(kubectl argo rollouts list rollout "$context" | __fzfsh_kubectl)
+  [[ -z "$rollout" ]] && rollout=$(eval "kubectl argo rollouts list rollout $context" | __fzfsh_kubectl)
   [[ -z "$rollout" ]] && return 1
 
   eval "kubectl argo rollouts get rollout $rollout $context $extra"
@@ -34,50 +34,52 @@ function fzfsh::kubectl::argo() {
 function fzfsh::kubectl::exec() {
   local app=""
   local context=""
+  local extra=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --context) context=$(kubectx | fzf); shift ;;
+      --context) context="--context=$(kubectx | fzf)"; shift ;;
+      -*|--*) extra+="$1 "; shift ;;
       *) app="$1"; shift ;;
     esac
   done
 
   if [[ -z "$app" ]]; then
-    pod=$(kubectl get pods --context="$context" | __fzfsh_kubectl)
+    pod=$(eval "kubectl get pods $context" | __fzfsh_kubectl)
   else
-    pod=$(kubectl get pods --context="$context" -lapp="$app" | __fzfsh_kubectl)
+    pod=$(eval "kubectl get pods $context -lapp=$app" | __fzfsh_kubectl)
   fi
 
   [[ -z "$pod" ]] && return 1
-  kubectl exec -it "$pod" --context="$context" -- /bin/bash
+  eval "kubectl exec -it $context $extra $pod -- /bin/bash"
 }
 
 # K8s - logs
 function fzfsh::kubectl::logs() {
   local app=""
-  local args=()
   local by_pod=false
   local context=""
+  local extra=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --context) context=$(kubectx | fzf); shift ;;
+      --context) context="--context=$(kubectx | fzf)"; shift ;;
       --pod) by_pod=true; shift ;;
-      -*|--*) args+=("$1"); shift ;;
+      -*|--*) extra+="$1 "; shift ;;
       *) app="$1"; shift ;;
     esac
   done
 
-  [[ -z "$app" ]] && app=$(kubectl get services --context="$context" | __fzfsh_kubectl)
+  [[ -z "$app" ]] && app=$(eval "kubectl get services $context" | __fzfsh_kubectl)
   [[ -z "$app" ]] && return 1
 
   if [[ "$by_pod" = true ]]; then
-    local pod=$(kubectl get pods --context="$context" -lapp="$app" | __fzfsh_kubectl)
+    local pod=$(eval "kubectl get pods $context -lapp=$app" | __fzfsh_kubectl)
     [[ -z "$pod" ]] && return 1
 
-    kubectl logs "${args[@]}" --context="$context" "$pod"
+    eval "kubectl logs $context $extra $pod"
   else
-    kubectl logs "${args[@]}" --context="$context" -lapp="$app" --all-containers=true
+    eval "kubectl logs $context $extra -lapp=$app --all-containers"
   fi
 }
 
@@ -90,12 +92,12 @@ function fzfsh::kubectl::pods() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --context) context="--context=$(kubectx | fzf)"; shift ;;
-      --watch) extra+="--watch "; shift ;;
+      -*|--*) extra+="$1 "; shift ;;
       *) app="$1"; shift ;;
     esac
   done
 
-  [[ -z "$app" ]] && app=$(kubectl get services "$context" | __fzfsh_kubectl)
+  [[ -z "$app" ]] && app=$(eval "kubectl get services $context" | __fzfsh_kubectl)
   [[ -z "$app" ]] && return 1
 
   eval "kubectl get pods -lapp=$app $context $extra"
