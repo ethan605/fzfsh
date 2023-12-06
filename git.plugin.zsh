@@ -8,8 +8,8 @@ FZFSH_GIT_FZF_OPTS="
   $FZF_DEFAULT_OPTS
   --ansi
   --bind='?:toggle-preview'
-  --bind='alt-j:preview-down,alt-n:preview-down'
-  --bind='alt-k:preview-up,alt-p:preview-up'
+  --bind='ctrl-d:preview-down'
+  --bind='ctrl-u:preview-up'
   --bind='alt-w:toggle-preview-wrap'
   --bind='ctrl-r:toggle-all'
   --bind='ctrl-s:toggle-sort'
