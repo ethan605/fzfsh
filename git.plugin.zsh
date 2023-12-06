@@ -308,7 +308,7 @@ function fzfsh::git::switch() {
 alias g=git
 alias gaa='git add --all'
 alias gau='git add --update'
-alias gb='git branch --all --color=always | sort -k1.1,1.1 -r | fzf --header-lines=1'
+alias gb=$'git branch --all --color=always | sort -k1.1,1.1 -r | FZF_DEFAULT_OPTS="$FZFSH_GIT_FZF_OPTS" fzf +s +m --tiebreak=index --header-lines=1 | awk \'{ print $1 }\''
 alias gcl='git clone --recurse-submodules'
 alias gcm='git commit --message'
 alias gfl='git fetch --prune && git pull origin $(git branch --show-current)'
