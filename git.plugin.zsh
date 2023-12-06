@@ -183,7 +183,7 @@ function fzfsh::git::merge() {
   git merge "$branch"
 }
 
-function fzfsh::git::rebase() {
+function fzfsh::git::rebase_interactive() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Rebase if passed as arguments
@@ -206,6 +206,26 @@ function fzfsh::git::rebase() {
 
   [[ -z "$commit" ]] && return 1
   git rebase -i "$commit"
+}
+
+function fzfsh::git::rebase_branch() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  # Rebase if passed as arguments
+  [[ $# -ne 0 ]] && { git rebase "$@"; return $?; }
+
+  local preview="git log {1} --abbrev-commit --decorate --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --date=relative"
+  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
+
+  local branch=$(
+    git branch --color=always --all |
+      sort -k1.1,1.1 -r |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      awk '{print $1}'
+  )
+
+  [[ -z "$branch" ]] && return 1
+  git rebase --reapply-cherry-picks "$branch"
 }
 
 function fzfsh::git::restore() {
@@ -307,7 +327,8 @@ alias gco='fzfsh::git::checkout_commit'
 alias gd='fzfsh::git::diff'
 alias glo='fzfsh::git::log'
 alias gm='fzfsh::git::merge'
-alias grb='fzfsh::git::rebase'
+alias grb='fzfsh::git::rebase_interactive'
+alias grB='fzfsh::git::rebase_branch'
 alias grs='fzfsh::git::restore'
 alias gss='fzfsh::git::stash_show'
 alias gsw='fzfsh::git::switch'
