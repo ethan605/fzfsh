@@ -68,6 +68,17 @@ function fzfsh::git::add() {
   echo "$files" | tr '\n' '\0' | xargs -0 -I% git add % && git status -su
 }
 
+function fzfsh::git::branch() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
+
+  git branch --all --color=always |
+    sort -k1.1,1.1 -r |
+    FZF_DEFAULT_OPTS="$opts" fzf |
+    awk '{ print $1 }'
+}
+
 function fzfsh::git::delete_branch() {
   __fzfsh_git_inside_work_tree || return 1
 
@@ -134,7 +145,7 @@ function fzfsh::git::diff() {
   [[ $# -ne 0 ]] && { git diff "$@" | eval "$__fzfsh_git_diff_pager --side-by-side"; return $? }
 
   local repo="$(git rev-parse --show-toplevel)"
-  local preview="echo {} | sed 's/.*]  //' | xargs -I% git diff --color=always -- '$repo/%' | $__fzfsh_git_diff_pager"
+  local preview="echo {} | sed 's/.*] //' | xargs -I% git diff --color=always -- '$repo/%' | $__fzfsh_git_diff_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS
     +m -0
@@ -142,7 +153,23 @@ function fzfsh::git::diff() {
   "
 
   git diff --name-status |
-    sed -E 's/^(.)[[:space:]]+(.*)$/[\1]  \2/' |
+    sed -E 's/^(.)[[:space:]]+(.*)$/[\1] \2/' |
+    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
+}
+
+function fzfsh::git::diff_branch() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  local branch=$(fzfsh::git::branch)
+  local preview="echo {} | xargs -I% git diff --color=always $branch % | $__fzfsh_git_diff_pager"
+  local opts="
+    $FZFSH_GIT_FZF_OPTS
+    +m -0
+    --bind=\"enter:execute($preview --side-by-side --paging=always)\"
+  "
+
+  git diff --name-status "$branch" |
+    awk '{ print $2 }' |
     FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
 }
 
@@ -305,10 +332,9 @@ function fzfsh::git::switch() {
 }
 
 # Regular aliases
-alias g=git
+alias g='git'
 alias gaa='git add --all'
 alias gau='git add --update'
-alias gb=$'git branch --all --color=always | sort -k1.1,1.1 -r | FZF_DEFAULT_OPTS="$FZFSH_GIT_FZF_OPTS" fzf +s +m --tiebreak=index --header-lines=1 | awk \'{ print $1 }\''
 alias gcl='git clone --recurse-submodules'
 alias gcm='git commit --message'
 alias gfl='git fetch --prune && git pull origin $(git branch --show-current)'
@@ -323,14 +349,16 @@ alias greset!='git reset --hard origin $(git branch --show-current)'
 
 # FZF aliases
 alias ga='fzfsh::git::add'
+alias gb='fzfsh::git::branch'
 alias gbD='fzfsh::git::delete_branch'
 alias gclean='fzfsh::git::clean'
 alias gco='fzfsh::git::checkout_commit'
 alias gd='fzfsh::git::diff'
+alias gdB='fzfsh::git::diff_branch'
 alias glo='fzfsh::git::log'
 alias gm='fzfsh::git::merge'
-alias grb='fzfsh::git::rebase_interactive'
 alias grB='fzfsh::git::rebase_branch'
+alias grb='fzfsh::git::rebase_interactive'
 alias grs='fzfsh::git::restore'
 alias gss='fzfsh::git::stash_show'
 alias gsw='fzfsh::git::switch'
