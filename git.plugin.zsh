@@ -183,6 +183,7 @@ function fzfsh::git::log() {
     +s +m --tiebreak=index
     --bind=\"enter:execute($preview --side-by-side --paging=always)\"
     --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)+abort\"
+    --header=\"Press CTRL-Y to copy commit SHA into clipboard\"
   "
 
   git log --all --decorate --graph --color=always --format="$__fzfsh_git_log_format" $* |
