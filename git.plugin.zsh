@@ -128,7 +128,6 @@ function fzfsh::git::checkout_commit() {
   local opts="
     $FZFSH_GIT_FZF_OPTS
     +s +m --tiebreak=index
-    --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)\"
   "
 
   git log --graph --color=always --format="$__fzfsh_git_log_format" |
@@ -183,7 +182,7 @@ function fzfsh::git::log() {
     $FZFSH_GIT_FZF_OPTS
     +s +m --tiebreak=index
     --bind=\"enter:execute($preview --side-by-side --paging=always)\"
-    --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)\"
+    --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)+abort\"
   "
 
   git log --all --decorate --graph --color=always --format="$__fzfsh_git_log_format" $* |
@@ -222,7 +221,6 @@ function fzfsh::git::rebase_interactive() {
   local opts="
     $FZFSH_GIT_FZF_OPTS
     +s +m --tiebreak=index
-    --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)\"
   "
   local commit=$(
     git log --graph --color=always --format="$__fzfsh_git_log_format" $* |
