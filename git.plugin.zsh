@@ -167,8 +167,7 @@ function fzfsh::git::diff_branch() {
     --bind=\"enter:execute($preview --side-by-side --paging=always)\"
   "
 
-  git diff --name-status "$branch" |
-    awk '{ print $2 }' |
+  git diff --relative --name-only "$branch" |
     FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
 }
 
