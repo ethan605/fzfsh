@@ -9,7 +9,7 @@ function __fzfsh_chezmoi_parse() {
   echo $files
 }
 
-function fzfsh::chezmoi::add() {
+function fzfsh::chezmoi::re-add() {
   local options=$(chezmoi status)
   [[ -z "$options" ]] && return 1
 
@@ -20,7 +20,7 @@ function fzfsh::chezmoi::add() {
   [[ -z "$items" ]] && return 1
 
   while read -r item; do files+=("$HOME/$item"); done <<< "$items"
-  chezmoi add $files
+  chezmoi re-add $files
 }
 
 function fzfsh::chezmoi::apply() {
@@ -56,7 +56,7 @@ function fzfsh::chezmoi::diff() {
     | fzf --bind="enter:execute($cmd --side-by-side --paging=always)" --preview="$cmd"
 }
 
-alias cadd='fzfsh::chezmoi::add'
+alias cadd='fzfsh::chezmoi::re-add'
 alias capply='fzfsh::chezmoi::apply'
 alias cdiff='fzfsh::chezmoi::diff'
 alias cedit='fzfsh::chezmoi::edit'
