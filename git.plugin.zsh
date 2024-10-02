@@ -185,7 +185,7 @@ function fzfsh::git::log() {
     --header=\"Press CTRL-Y to copy commit SHA into clipboard\"
   "
 
-  git log --all --decorate --graph --color=always --format="$__fzfsh_git_log_format" $* |
+  git log --decorate --graph --color=always --format="$__fzfsh_git_log_format" $* |
     FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
 }
 
