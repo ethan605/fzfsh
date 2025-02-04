@@ -33,8 +33,16 @@ function fzfsh::docker::rmi() {
   )
 }
 
+function fzfsh::docker::volume_rm() {
+  docker volume rm $(
+    docker volume ls --filter dangling=true --format '{{ .Name }}' \
+    | fzf --multi
+  )
+}
+
 alias dstop='fzfsh::docker::stop'
-alias drmi='fzfsh::docker::rmi'
+alias drmi!='fzfsh::docker::rmi'
+alias dvol!='fzfsh::docker::volume_rm'
 alias ddf='docker system df'
 alias dkill!='fzfsh::docker::kill'
 alias dprune!='docker system prune --volumes'
