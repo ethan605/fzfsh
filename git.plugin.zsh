@@ -137,6 +137,25 @@ function fzfsh::git::checkout_commit() {
     xargs -I% git checkout % --
 }
 
+function fzfsh::git::commit_fixup() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  # Checkout commit if passed as arguments
+  [[ $# -ne 0 ]] && { git commit --fixup "$@"; return $?; }
+
+  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
+  local opts="
+    $FZFSH_GIT_FZF_OPTS
+    +s +m --tiebreak=index
+  "
+
+  git log --graph --color=always --format="$__fzfsh_git_log_format" |
+    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+    grep -Eo '[a-f0-9]+' |
+    head -1 |
+    xargs -I% git commit --fixup %
+}
+
 function fzfsh::git::diff() {
   __fzfsh_git_inside_work_tree || return 1
 
@@ -213,7 +232,7 @@ function fzfsh::git::rebase_interactive() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Rebase if passed as arguments
-  [[ $# -ne 0 ]] && { git rebase -i "$@"; return $?; }
+  [[ $# -ne 0 ]] && { git rebase --interactive --autosquash "$@"; return $?; }
 
   # Extract files parameters for `git show` command
   local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*")
@@ -230,7 +249,7 @@ function fzfsh::git::rebase_interactive() {
   )
 
   [[ -z "$commit" ]] && return 1
-  git rebase -i "$commit"
+  git rebase --interactive --autosquash "$commit"
 }
 
 function fzfsh::git::rebase_branch() {
@@ -350,6 +369,7 @@ alias ga='fzfsh::git::add'
 alias gb='fzfsh::git::branch'
 alias gbD='fzfsh::git::delete_branch'
 alias gclean='fzfsh::git::clean'
+alias gcf='fzfsh::git::commit_fixup'
 alias gco='fzfsh::git::checkout_commit'
 alias gd='fzfsh::git::diff'
 alias gdB='fzfsh::git::diff_branch'
