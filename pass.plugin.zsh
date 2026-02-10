@@ -17,7 +17,7 @@ function fzfsh::pass::clip() {
 function fzfsh::pass::edit() {
   local entry=${1:-$(__fzfsh_pass)}
   [[ -z "$entry" ]] && return 1
-  pass tailedit "$entry"
+  pass edit "$entry"
 }
 
 function fzfsh::pass::otp() {
