@@ -40,9 +40,12 @@ function fzfsh::docker::volume_rm() {
   )
 }
 
+# Regular aliases
+alias ddf='docker system df'
+alias dprune!='docker system prune --volumes'
+
+# FZF aliases
 alias dstop='fzfsh::docker::stop'
 alias drmi!='fzfsh::docker::rmi'
 alias dvol!='fzfsh::docker::volume_rm'
-alias ddf='docker system df'
 alias dkill!='fzfsh::docker::kill'
-alias dprune!='docker system prune --volumes'

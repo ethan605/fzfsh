@@ -56,6 +56,10 @@ function fzfsh::chezmoi::diff() {
     | fzf --bind="enter:execute($cmd --side-by-side --paging=always)" --preview="$cmd"
 }
 
+# Regular aliases
+alias cst='chezmoi status'
+
+# FZF aliases
 alias cadd='fzfsh::chezmoi::re-add'
 alias capply='fzfsh::chezmoi::apply'
 alias cdiff='fzfsh::chezmoi::diff'
