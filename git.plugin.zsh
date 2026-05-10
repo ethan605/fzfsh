@@ -1,5 +1,5 @@
 # Ensure git and delta are available
-if (( ! ${+commands[git]} )) || (( ! ${+commands[delta]} )); then
+if ((!${+commands[git]})) || ((!${+commands[delta]})); then
   return 1
 fi
 
@@ -25,13 +25,17 @@ __fzfsh_git_log_format="%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset"
 
 __fzfsh_copy_cmd=$([[ $(uname) == "Linux" ]] && echo "wl-copy" || echo "pbcopy")
 
-function __fzfsh_git_inside_work_tree() { git rev-parse --is-inside-work-tree > /dev/null; }
+function __fzfsh_git_inside_work_tree() { git rev-parse --is-inside-work-tree >/dev/null; }
 
 function fzfsh::git::add() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Add files if passed as arguments
-  [[ $# -ne 0 ]] && { git add "$@"; git status -su; return 0 }
+  [[ $# -ne 0 ]] && {
+    git add "$@"
+    git status -su
+    return 0
+  }
 
   local changed=$(git config --get-color color.status.changed red)
   local unmerged=$(git config --get-color color.status.unmerged red)
@@ -83,7 +87,10 @@ function fzfsh::git::delete_branch() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Delete branches if passed as arguments
-  [[ $# -ne 0 ]] && { git branch --delete --force "$@"; return $?; }
+  [[ $# -ne 0 ]] && {
+    git branch --delete --force "$@"
+    return $?
+  }
 
   local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s -m --tiebreak=index --header-lines=1"
@@ -102,7 +109,10 @@ function fzfsh::git::clean() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Clean files if passed as arguments
-  [[ $# -ne 0 ]] && { git clean -xdff "$@"; return $?; }
+  [[ $# -ne 0 ]] && {
+    git clean -xdff "$@"
+    return $?
+  }
 
   local opts="$FZFSH_GIT_FZF_OPTS -m -0"
 
@@ -122,7 +132,10 @@ function fzfsh::git::checkout_commit() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Checkout commit if passed as arguments
-  [[ $# -ne 0 ]] && { git checkout "$@"; return $?; }
+  [[ $# -ne 0 ]] && {
+    git checkout "$@"
+    return $?
+  }
 
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
   local opts="
@@ -141,7 +154,10 @@ function fzfsh::git::commit_fixup() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Checkout commit if passed as arguments
-  [[ $# -ne 0 ]] && { git commit --fixup "$@"; return $?; }
+  [[ $# -ne 0 ]] && {
+    git commit --fixup "$@"
+    return $?
+  }
 
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
   local opts="
@@ -160,7 +176,10 @@ function fzfsh::git::diff() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Show diff if passed as arguments
-  [[ $# -ne 0 ]] && { git diff "$@" | eval "$__fzfsh_git_diff_pager --side-by-side"; return $? }
+  [[ $# -ne 0 ]] && {
+    git diff "$@" | eval "$__fzfsh_git_diff_pager --side-by-side"
+    return $?
+  }
 
   local repo="$(git rev-parse --show-toplevel)"
   local preview="echo {} | sed 's/.*] //' | xargs -I% git diff --color=always -- '$repo/%' | $__fzfsh_git_diff_pager"
@@ -194,7 +213,7 @@ function fzfsh::git::log() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Extract files parameters for `git show` command
-  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*")
+  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*")
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $__fzfsh_git_show_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS
@@ -212,7 +231,10 @@ function fzfsh::git::merge() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Merge branch if passed as arguments
-  [[ $# -ne 0 ]] && { git merge "$@"; return $?; }
+  [[ $# -ne 0 ]] && {
+    git merge "$@"
+    return $?
+  }
 
   local preview="git log {1} --abbrev-commit --decorate --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
@@ -232,10 +254,13 @@ function fzfsh::git::rebase_interactive() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Rebase if passed as arguments
-  [[ $# -ne 0 ]] && { git rebase --interactive --autosquash "$@"; return $?; }
+  [[ $# -ne 0 ]] && {
+    git rebase --interactive --autosquash "$@"
+    return $?
+  }
 
   # Extract files parameters for `git show` command
-  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<< "$*")
+  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*")
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $__fzfsh_git_show_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS
@@ -256,7 +281,10 @@ function fzfsh::git::rebase_branch() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Rebase if passed as arguments
-  [[ $# -ne 0 ]] && { git rebase "$@"; return $?; }
+  [[ $# -ne 0 ]] && {
+    git rebase "$@"
+    return $?
+  }
 
   local preview="git log {1} --abbrev-commit --decorate --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
@@ -276,7 +304,11 @@ function fzfsh::git::restore() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Add files if passed as arguments
-  [[ $# -ne 0 ]] && { git restore "$@"; git status -su; return }
+  [[ $# -ne 0 ]] && {
+    git restore "$@"
+    git status -su
+    return
+  }
 
   local changed=$(git config --get-color color.status.changed red)
 
@@ -324,7 +356,10 @@ function fzfsh::git::switch() {
   __fzfsh_git_inside_work_tree || return 1
 
   # Switch if passed as arguments
-  [[ $# -ne 0 ]] && { git switch "$@"; return $?; }
+  [[ $# -ne 0 ]] && {
+    git switch "$@"
+    return $?
+  }
 
   local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
