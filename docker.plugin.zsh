@@ -12,7 +12,7 @@ function __fzfsh_docker() {
 function fzfsh::docker::containers() {
   local subcommand=${1:-}
 
-  if [[-z "$subcommand"]]; then
+  if [[ -z "$subcommand" ]]; then
     return 1
   fi
 
