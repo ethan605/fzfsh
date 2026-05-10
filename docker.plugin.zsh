@@ -16,7 +16,7 @@ function fzfsh::docker::containers() {
     return 1
   fi
 
-  docker ps --all --format='table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}}' |
+  docker ps --all --format='table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}' |
     __fzfsh_docker |
     awk '{ print $1 }' |
     xargs -I% docker container "$subcommand" %
