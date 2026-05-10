@@ -1,5 +1,5 @@
 # Ensure pass is available
-if (( ! ${+commands[pass]} )); then
+if ((!${+commands[pass]})); then
   return 1
 fi
 

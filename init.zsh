@@ -1,5 +1,5 @@
 # Ensure fzf is available
-if (( ! ${+commands[fzf]} )); then
+if ((!${+commands[fzf]})); then
   return 1
 fi
 
