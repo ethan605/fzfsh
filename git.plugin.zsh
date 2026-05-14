@@ -398,9 +398,9 @@ alias gsh='git stash'
 alias gst='git status --short --untracked-files=all'
 
 # Default branch inference
-alias gsr='git symbolic-ref refs/remotes/origin/HEAD | cut -f4 -d/'
-alias grM='git rebase $(gsr)'
-alias gsM='git switch $(gsr)'
+alias gbM='git symbolic-ref refs/remotes/origin/HEAD | cut -f4 -d/'
+alias grM='git rebase $(gbM)'
+alias gsM='git switch $(gbM)'
 
 # FZF aliases
 alias ga='fzfsh::git::add'
