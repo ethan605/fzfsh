@@ -22,6 +22,7 @@ __fzfsh_git_show_pager=$(git config pager.show || echo "$__fzfsh_git_pager")
 __fzfsh_git_diff_pager=$(git config pager.diff || echo "$__fzfsh_git_pager")
 __fzfsh_git_ignore_pager="bat -l gitignore --color=always"
 __fzfsh_git_log_format="%C(auto)%h%d %s %C(black)%C(bold)%cr%Creset"
+__fzfsh_git_log_default_preview="git log {1} --abbrev-commit --color=always --decorate --oneline --format='$__fzfsh_git_log_format'"
 
 __fzfsh_copy_cmd=$([[ $(uname) == "Linux" ]] && echo "wl-copy" || echo "pbcopy")
 
@@ -69,7 +70,9 @@ function fzfsh::git::add() {
   )
 
   [[ ! -n "$files" ]] && return 0
-  echo "$files" | tr '\n' '\0' | xargs -0 -I% git add % && git status -su
+  echo "$files" |
+    tr '\n' '\0' |
+    xargs -0 -I% git add % && git status -su
 }
 
 function fzfsh::git::branch() {
@@ -92,17 +95,20 @@ function fzfsh::git::delete_branch() {
     return $?
   }
 
-  local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s -m --tiebreak=index --header-lines=1"
 
   local branches=$(
-    git branch --color=always | sort -k1.1,1.1 -r |
-      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+    git branch --color=always |
+      sort -k1.1,1.1 -r |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
       awk '{print $0}'
   )
 
   [[ -z "$branches" ]] && return 1
-  echo "$branches" | sed -r 's/^\s+//gi' | tr '\n' '\0' | xargs -0 -I% git branch --delete --force %
+  echo "$branches" |
+    sed -r 's/^\s+//gi' |
+    tr '\n' '\0' |
+    xargs -0 -I% git branch --delete --force %
 }
 
 function fzfsh::git::clean() {
@@ -125,7 +131,9 @@ function fzfsh::git::clean() {
   )
 
   [[ ! -n "$files" ]] && return 0
-  echo "$files" | tr '\n' '\0' | xargs -0 -I% git clean -xdff '%' && git status -su
+  echo "$files" |
+    tr '\n' '\0' |
+    xargs -0 -I% git clean -xdff '%' && git status -su
 }
 
 function fzfsh::git::checkout_commit() {
@@ -138,15 +146,9 @@ function fzfsh::git::checkout_commit() {
   }
 
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
-  local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +s +m --tiebreak=index
-  "
+  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index"
 
-  git log --graph --color=always --format="$__fzfsh_git_log_format" |
-    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
-    grep -Eo '[a-f0-9]+' |
-    head -1 |
+  fzfsh::git::log |
     xargs -I% git checkout % --
 }
 
@@ -160,15 +162,9 @@ function fzfsh::git::commit_fixup() {
   }
 
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
-  local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +s +m --tiebreak=index
-  "
+  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index"
 
-  git log --graph --color=always --format="$__fzfsh_git_log_format" |
-    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
-    grep -Eo '[a-f0-9]+' |
-    head -1 |
+  fzfsh::git::log |
     xargs -I% git commit --fixup %
 }
 
@@ -184,8 +180,7 @@ function fzfsh::git::diff() {
   local repo="$(git rev-parse --show-toplevel)"
   local preview="echo {} | sed 's/.*] //' | xargs -I% git diff --color=always -- '$repo/%' | $__fzfsh_git_diff_pager"
   local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +m -0
+    $FZFSH_GIT_FZF_OPTS +m -0
     --bind=\"enter:execute($preview --side-by-side --paging=always)\"
   "
 
@@ -200,8 +195,7 @@ function fzfsh::git::diff_branch() {
   local branch=$(fzfsh::git::branch)
   local preview="echo {} | xargs -I% git diff --color=always $branch % | $__fzfsh_git_diff_pager"
   local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +m -0
+    $FZFSH_GIT_FZF_OPTS +m -0
     --bind=\"enter:execute($preview --side-by-side --paging=always)\"
   "
 
@@ -216,15 +210,14 @@ function fzfsh::git::log() {
   local files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*")
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $__fzfsh_git_show_pager"
   local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +s +m --tiebreak=index
-    --bind=\"enter:execute($preview --side-by-side --paging=always)\"
+    $FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index
     --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)+abort\"
     --header=\"Press CTRL-Y to copy commit SHA into clipboard\"
   "
 
-  git log --decorate --graph --color=always --format="$__fzfsh_git_log_format" $* |
-    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
+  git log --abbrev-commit --color=always --decorate --oneline --format="$__fzfsh_git_log_format" |
+    FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+    awk '{ print $1 }'
 }
 
 function fzfsh::git::merge() {
@@ -236,13 +229,12 @@ function fzfsh::git::merge() {
     return $?
   }
 
-  local preview="git log {1} --abbrev-commit --decorate --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
 
   local branch=$(
     git branch --color=always --all |
       sort -k1.1,1.1 -r |
-      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
       awk '{print $1}'
   )
 
@@ -262,18 +254,11 @@ function fzfsh::git::rebase_interactive() {
   # Extract files parameters for `git show` command
   local files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*")
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $__fzfsh_git_show_pager"
-  local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +s +m --tiebreak=index
-  "
-  local commit=$(
-    git log --graph --color=always --format="$__fzfsh_git_log_format" $* |
-      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
-      grep -Eo '[a-f0-9]+' |
-      head -1
-  )
+  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index"
 
+  local commit=$(fzfsh::git::log)
   [[ -z "$commit" ]] && return 1
+
   git rebase --interactive --autosquash "$commit"
 }
 
@@ -286,13 +271,12 @@ function fzfsh::git::rebase_branch() {
     return $?
   }
 
-  local preview="git log {1} --abbrev-commit --decorate --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
 
   local branch=$(
     git branch --color=always --all |
       sort -k1.1,1.1 -r |
-      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
       awk '{print $1}'
   )
 
@@ -336,7 +320,9 @@ function fzfsh::git::restore() {
   )
 
   [[ -z "$files" ]] && return 1
-  echo "$files" | tr '\n' '\0' | xargs -0 -I% git restore % && git status -su
+  echo "$files" |
+    tr '\n' '\0' |
+    xargs -0 -I% git restore % && git status -su
 }
 
 function fzfsh::git::stash_show() {
@@ -344,8 +330,7 @@ function fzfsh::git::stash_show() {
 
   local preview="echo {} | cut -d: -f1 | xargs -I% git stash show --color=always --ext-diff % | $__fzfsh_git_diff_pager"
   local opts="
-    $FZFSH_GIT_FZF_OPTS
-    +s +m -0
+    $FZFSH_GIT_FZF_OPTS +s +m -0
     --tiebreak=index --bind=\"enter:execute($preview --side-by-side --paging=always)\"
   "
 
@@ -361,13 +346,12 @@ function fzfsh::git::switch() {
     return $?
   }
 
-  local preview="git log {1} --graph --pretty=format:'$__fzfsh_git_log_format' --color=always --abbrev-commit --date=relative"
   local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
 
   local branch=$(
     git branch --color=always --all |
       sort -k1.1,1.1 -r |
-      FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
+      FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
       awk '{print $1}'
   )
   [[ -z "$branch" ]] && return 1
