@@ -377,7 +377,7 @@ alias gfl='git fetch --prune origin && git pull origin $(git branch --show-curre
 alias ggl='git pull origin $(git branch --show-current)'
 alias ggp='git push origin $(git branch --show-current)'
 alias ggpu='git push --set-upstream origin $(git branch --show-current)'
-alias gpush!='git push --force'
+alias gpush!='git push --force-with-lease'
 alias gsh='git stash'
 alias gst='git status --short --untracked-files=all'
 
