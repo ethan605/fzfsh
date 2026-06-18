@@ -32,10 +32,6 @@ function fzfsh::pass::show() {
   pass show "$entry" | bat --language=yaml --paging=always
 }
 
-# Regular aliases
-alias pgl='pass git pull'
-alias pgp='pass git push'
-
 # FZF aliases
 alias pclip='fzfsh::pass::clip'
 alias pedit='fzfsh::pass::edit'

@@ -380,6 +380,7 @@ alias ggpu='git push --set-upstream origin $(git branch --show-current)'
 alias gpush!='git push --force-with-lease'
 alias gsh='git stash'
 alias gst='git status --short --untracked-files=all'
+alias gsync!='git fetch --prune upstream && git pull upstream $(gbM) --no-ff && git rebase upstream $(gbM)'
 
 # Default branch inference
 alias gbM='git symbolic-ref refs/remotes/origin/HEAD | cut -f4 -d/'
