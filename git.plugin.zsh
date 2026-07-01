@@ -145,11 +145,7 @@ function fzfsh::git::checkout_commit() {
     return $?
   }
 
-  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
-  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index"
-
-  fzfsh::git::log |
-    xargs -I% git checkout % --
+  fzfsh::git::log | xargs -I% git checkout % --
 }
 
 function fzfsh::git::commit_fixup() {
@@ -161,11 +157,7 @@ function fzfsh::git::commit_fixup() {
     return $?
   }
 
-  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % | $__fzfsh_git_show_pager"
-  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index"
-
-  fzfsh::git::log |
-    xargs -I% git commit --fixup %
+  fzfsh::git::log | xargs -I% git commit --fixup %
 }
 
 function fzfsh::git::diff() {
@@ -208,7 +200,7 @@ function fzfsh::git::log() {
 
   # Extract files parameters for `git show` command
   local files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*")
-  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $__fzfsh_git_show_pager"
+  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always --show-signature % -- $files | $__fzfsh_git_show_pager"
   local opts="
     $FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index
     --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)+abort\"
@@ -250,11 +242,6 @@ function fzfsh::git::rebase_interactive() {
     git rebase --interactive --autosquash "$@"
     return $?
   }
-
-  # Extract files parameters for `git show` command
-  local files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*")
-  local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always % -- $files | $__fzfsh_git_show_pager"
-  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index"
 
   local commit=$(fzfsh::git::log)
   [[ -z "$commit" ]] && return 1
