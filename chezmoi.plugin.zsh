@@ -1,5 +1,5 @@
 # Ensure chezmoi is available
-if ((!${+commands[chezmoi]})); then
+if (( !${+commands[chezmoi]} )); then
   return 1
 fi
 
@@ -57,6 +57,7 @@ function fzfsh::chezmoi::diff() {
 }
 
 # Regular aliases
+alias c=chezmoi
 alias cst='chezmoi status'
 
 # FZF aliases

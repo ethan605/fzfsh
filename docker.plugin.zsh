@@ -1,5 +1,5 @@
 # Ensure docker is available
-if ((!${+commands[docker]})); then
+if (( !${+commands[docker]} )); then
   return 1
 fi
 

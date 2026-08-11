@@ -1,5 +1,5 @@
 # Ensure git and delta are available
-if ((!${+commands[git]})) || ((!${+commands[delta]})); then
+if (( !${+commands[git]} )) || (( !${+commands[delta]} )); then
   return 1
 fi
 
@@ -16,6 +16,8 @@ FZFSH_GIT_FZF_OPTS="
   --preview-window='right:60%'
   +1
 "
+FZFSH_GIT_FZF_OPTS_SINGLE="$FZFSH_GIT_FZF_OPTS --no-sort --no-multi --tiebreak=index"
+FZFSH_GIT_FZF_OPTS_MULTI="$FZFSH_GIT_FZF_OPTS --exit-0 --multi"
 
 __fzfsh_git_pager=$(git config core.pager || echo 'delta')
 __fzfsh_git_show_pager=$(git config pager.show || echo "$__fzfsh_git_pager")
@@ -59,7 +61,7 @@ function fzfsh::git::add() {
     fi
   "
 
-  local opts="$FZFSH_GIT_FZF_OPTS -0 -m --nth 2..,.."
+  local opts="$FZFSH_GIT_FZF_OPTS_MULTI --nth 2..,.."
 
   local files=$(
     git -c color.status=always -c status.relativePaths=true status -su |
@@ -68,8 +70,8 @@ function fzfsh::git::add() {
       FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
       sh -c "$extract"
   )
-
   [[ ! -n "$files" ]] && return 0
+
   echo "$files" |
     tr '\n' '\0' |
     xargs -0 -I% git add % && git status -su
@@ -78,7 +80,7 @@ function fzfsh::git::add() {
 function fzfsh::git::branch() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
 
   git branch --all --color=always |
     sort -k1.1,1.1 -r |
@@ -95,16 +97,16 @@ function fzfsh::git::delete_branch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS +s -m --tiebreak=index --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
 
   local branches=$(
     git branch --color=always |
       sort -k1.1,1.1 -r |
       FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
-      awk '{print $0}'
+      awk '{ print $1 }'
   )
-
   [[ -z "$branches" ]] && return 1
+
   echo "$branches" |
     sed -r 's/^\s+//gi' |
     tr '\n' '\0' |
@@ -120,7 +122,7 @@ function fzfsh::git::clean() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS -m -0"
+  local opts="$FZFSH_GIT_FZF_OPTS_MULTI"
 
   # Note: Postfix '/' in directory path should be removed. Otherwise the directory itself will not be removed.
   local files=$(
@@ -129,8 +131,8 @@ function fzfsh::git::clean() {
       FZF_DEFAULT_OPTS="$opts" fzf |
       sed 's#/$##'
   )
+  [[ ! -n "$files" ]] && return 1
 
-  [[ ! -n "$files" ]] && return 0
   echo "$files" |
     tr '\n' '\0' |
     xargs -0 -I% git clean -xdff '%' && git status -su
@@ -202,7 +204,7 @@ function fzfsh::git::log() {
   local files=$(sed -nE 's/.* -- (.*)/\1/p' <<<"$*")
   local preview="echo {} | grep -Eo '[a-f0-9]+' | head -1 | xargs -I% git show --color=always --show-signature % -- $files | $__fzfsh_git_show_pager"
   local opts="
-    $FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index
+    $FZFSH_GIT_FZF_OPTS_SINGLE
     --bind=\"ctrl-y:execute-silent(echo {} | grep -Eo '[a-f0-9]+' | head -1 | tr -d '[:space:]' | $__fzfsh_copy_cmd)+abort\"
     --header=\"Press CTRL-Y to copy commit SHA into clipboard\"
   "
@@ -221,16 +223,16 @@ function fzfsh::git::merge() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
 
   local branch=$(
     git branch --color=always --all |
       sort -k1.1,1.1 -r |
       FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
-      awk '{print $1}'
+      awk '{ print $1 }'
   )
-
   [[ -z "$branch" ]] && return 1
+
   git merge "$branch"
 }
 
@@ -258,16 +260,16 @@ function fzfsh::git::rebase_branch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
 
   local branch=$(
     git branch --color=always --all |
       sort -k1.1,1.1 -r |
       FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
-      awk '{print $1}'
+      awk '{ print $1 }'
   )
-
   [[ -z "$branch" ]] && return 1
+
   git rebase --reapply-cherry-picks "$branch"
 }
 
@@ -296,7 +298,7 @@ function fzfsh::git::restore() {
     git diff --color=always -- \$file | $__fzfsh_git_diff_pager
   "
 
-  local opts="$FZFSH_GIT_FZF_OPTS -0 -m --nth 2..,.."
+  local opts="$FZFSH_GIT_FZF_OPTS_MULTI --nth 2..,.."
 
   local files=$(
     git -c color.status=always -c status.relativePaths=true status -su |
@@ -305,8 +307,8 @@ function fzfsh::git::restore() {
       FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview" |
       sh -c "$extract"
   )
-
   [[ -z "$files" ]] && return 1
+
   echo "$files" |
     tr '\n' '\0' |
     xargs -0 -I% git restore % && git status -su
@@ -317,8 +319,8 @@ function fzfsh::git::stash_show() {
 
   local preview="echo {} | cut -d: -f1 | xargs -I% git stash show --color=always --ext-diff % | $__fzfsh_git_diff_pager"
   local opts="
-    $FZFSH_GIT_FZF_OPTS +s +m -0
-    --tiebreak=index --bind=\"enter:execute($preview --side-by-side --paging=always)\"
+    $FZFSH_GIT_FZF_OPTS_SINGLE
+    -0 --bind=\"enter:execute($preview --side-by-side --paging=always)\"
   "
 
   git stash list | FZF_DEFAULT_OPTS="$opts" fzf --preview="$preview"
@@ -333,13 +335,13 @@ function fzfsh::git::switch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS +s +m --tiebreak=index --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
 
   local branch=$(
     git branch --color=always --all |
       sort -k1.1,1.1 -r |
       FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
-      awk '{print $1}'
+      awk '{ print $1 }'
   )
   [[ -z "$branch" ]] && return 1
 
@@ -352,6 +354,22 @@ function fzfsh::git::switch() {
   if ! git switch --track "$branch" 2>/dev/null; then
     git switch "${branch#remotes/origin/}"
   fi
+}
+
+function fzfsh::git::worktree_cd() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
+
+  local worktree=$(
+    git worktree list |
+      FZF_DEFAULT_OPTS="$opts" fzf |
+      awk '{ print $1 }' |
+      tr -d '\n'
+  )
+  [[ -z "$worktree" ]] && return 1
+
+  builtin cd -- "$worktree"
 }
 
 # Regular aliases
@@ -390,3 +408,4 @@ alias grb='fzfsh::git::rebase_interactive'
 alias grs='fzfsh::git::restore'
 alias gss='fzfsh::git::stash_show'
 alias gsw='fzfsh::git::switch'
+alias gwc='fzfsh::git::worktree_cd'
