@@ -97,7 +97,7 @@ function fzfsh::git::delete_branch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS --no-sort --multi --tiebreak=index --header-lines=1"
 
   local branches=$(
     git branch --color=always |
