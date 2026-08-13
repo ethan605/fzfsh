@@ -372,6 +372,22 @@ function fzfsh::git::worktree_cd() {
   builtin cd -- "$worktree"
 }
 
+function fzfsh::git::worktree_multi() {
+  __fzfsh_git_inside_work_tree || return 1
+
+  local opts="$FZFSH_GIT_FZF_OPTS_MULTI --no-sort --header-lines=1"
+
+  local worktrees=$(
+    git worktree list |
+      FZF_DEFAULT_OPTS="$opts" fzf |
+      awk '{ print $1 }' |
+      tr -d '\n'
+  )
+  [[ -z "$worktrees" ]] && return 1
+
+  echo "$worktrees"
+}
+
 # Regular aliases
 alias g='git'
 alias gaa='git add --all'
@@ -409,3 +425,4 @@ alias grs='fzfsh::git::restore'
 alias gss='fzfsh::git::stash_show'
 alias gsw='fzfsh::git::switch'
 alias gwc='fzfsh::git::worktree_cd'
+alias gwm='fzfsh::git::worktree_multi'
