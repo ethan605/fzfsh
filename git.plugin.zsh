@@ -364,7 +364,7 @@ function fzfsh::git::switch() {
 function fzfsh::git::worktree_cd() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE $(__fzfsh_git_render_header_opts)"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
 
   local worktree=$(
     git worktree list |
@@ -380,7 +380,7 @@ function fzfsh::git::worktree_cd() {
 function fzfsh::git::worktree_multi() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local opts="$FZFSH_GIT_FZF_OPTS_MULTI $(__fzfsh_git_render_header_opts) --no-sort"
+  local opts="$FZFSH_GIT_FZF_OPTS_MULTI --header-lines=1 --no-sort"
 
   local worktrees=$(
     git worktree list |
