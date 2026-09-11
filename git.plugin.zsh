@@ -13,6 +13,7 @@ FZFSH_GIT_FZF_OPTS="
   --bind='alt-w:toggle-preview-wrap'
   --bind='ctrl-r:toggle-all'
   --bind='ctrl-s:toggle-sort'
+  --header-lines-border=horizontal
   --preview-window='right:60%'
   +1
 "
@@ -29,6 +30,10 @@ __fzfsh_git_log_default_preview="git log {1} --abbrev-commit --color=always --de
 __fzfsh_copy_cmd=$([[ $(uname) == "Linux" ]] && echo "wl-copy" || echo "pbcopy")
 
 function __fzfsh_git_inside_work_tree() { git rev-parse --is-inside-work-tree >/dev/null; }
+
+function __fzfsh_git_render_header_opts() {
+  echo "--header-lines=$(git worktree list | wc -l)"
+}
 
 function fzfsh::git::add() {
   __fzfsh_git_inside_work_tree || return 1
@@ -80,7 +85,7 @@ function fzfsh::git::add() {
 function fzfsh::git::branch() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE $(__fzfsh_git_render_header_opts)"
 
   git branch --all --color=always |
     sort -k1.1,1.1 -r |
@@ -97,7 +102,7 @@ function fzfsh::git::delete_branch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS --no-sort --multi --tiebreak=index --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS $(__fzfsh_git_render_header_opts) --no-sort --multi --tiebreak=index"
 
   local branches=$(
     git branch --color=always |
@@ -223,7 +228,7 @@ function fzfsh::git::merge() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE $(__fzfsh_git_render_header_opts)"
 
   local branch=$(
     git branch --color=always --all |
@@ -260,7 +265,7 @@ function fzfsh::git::rebase_branch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE $(__fzfsh_git_render_header_opts)"
 
   local branch=$(
     git branch --color=always --all |
@@ -335,7 +340,7 @@ function fzfsh::git::switch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE $(__fzfsh_git_render_header_opts)"
 
   local branch=$(
     git branch --color=always --all |
@@ -359,7 +364,7 @@ function fzfsh::git::switch() {
 function fzfsh::git::worktree_cd() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE $(__fzfsh_git_render_header_opts)"
 
   local worktree=$(
     git worktree list |
@@ -375,7 +380,7 @@ function fzfsh::git::worktree_cd() {
 function fzfsh::git::worktree_multi() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local opts="$FZFSH_GIT_FZF_OPTS_MULTI --no-sort --header-lines=1"
+  local opts="$FZFSH_GIT_FZF_OPTS_MULTI $(__fzfsh_git_render_header_opts) --no-sort"
 
   local worktrees=$(
     git worktree list |
