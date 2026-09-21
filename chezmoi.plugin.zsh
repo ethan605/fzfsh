@@ -50,7 +50,19 @@ function fzfsh::chezmoi::diff() {
   local options=$(chezmoi status)
   [[ -z "$options" ]] && return 1
 
-  local cmd="chezmoi diff $HOME/{} | delta"
+  local addopts=''
+
+  while (("$#")); do
+		case "$1" in
+      --reverse)
+        addopts+="$1 "
+        shift ;;
+      *)
+        shift ;;
+    esac
+  done
+
+  local cmd="chezmoi diff $addopts $HOME/{} | delta"
   echo "$options" |
     awk '{ print substr($0, 4) }' |
     fzf --bind="enter:execute($cmd --side-by-side --paging=always)" --preview="$cmd"
