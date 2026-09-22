@@ -54,8 +54,8 @@ function fzfsh::chezmoi::diff() {
 
   while (("$#")); do
 		case "$1" in
-      --reverse)
-        addopts+="$1 "
+      reverse)
+        addopts+=" --reverse"
         shift ;;
       *)
         shift ;;
