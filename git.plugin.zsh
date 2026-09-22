@@ -85,11 +85,9 @@ function fzfsh::git::add() {
 function fzfsh::git::branch() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE $(__fzfsh_git_render_header_opts)"
-
-  git branch --all --color=always |
-    sort -k1.1,1.1 -r |
-    FZF_DEFAULT_OPTS="$opts" fzf |
+  git branch --color=always |
+    FZF_DEFAULT_OPTS="$FZFSH_GIT_FZF_OPTS_MULTI" fzf |
+    cut -c 3- |
     awk '{ print $1 }'
 }
 
@@ -102,14 +100,7 @@ function fzfsh::git::delete_branch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS $(__fzfsh_git_render_header_opts) --no-sort --multi --tiebreak=index"
-
-  local branches=$(
-    git branch --color=always |
-      sort -k1.1,1.1 -r |
-      FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
-      awk '{ print $1 }'
-  )
+  local branches=$(fzfsh::git::branch)
   [[ -z "$branches" ]] && return 1
 
   echo "$branches" |
@@ -179,7 +170,7 @@ function fzfsh::git::diff() {
   local repo="$(git rev-parse --show-toplevel)"
   local preview="echo {} | sed 's/.*] //' | xargs -I% git diff --color=always -- '$repo/%' | $__fzfsh_git_diff_pager"
   local opts="
-    $FZFSH_GIT_FZF_OPTS +m -0
+    $FZFSH_GIT_FZF_OPTS_MULTI
     --bind=\"enter:execute($preview --side-by-side --paging=always)\"
   "
 
@@ -194,7 +185,7 @@ function fzfsh::git::diff_branch() {
   local branch=$(fzfsh::git::branch)
   local preview="echo {} | xargs -I% git diff --color=always $branch % | $__fzfsh_git_diff_pager"
   local opts="
-    $FZFSH_GIT_FZF_OPTS +m -0
+    $FZFSH_GIT_FZF_OPTS_MULTI
     --bind=\"enter:execute($preview --side-by-side --paging=always)\"
   "
 
