@@ -256,12 +256,10 @@ function fzfsh::git::rebase_branch() {
     return $?
   }
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE $(__fzfsh_git_render_header_opts)"
-
   local branch=$(
-    git branch --color=always --all |
-      sort -k1.1,1.1 -r |
-      FZF_DEFAULT_OPTS="$opts" fzf --preview="$__fzfsh_git_log_default_preview" |
+    git branch --color=always |
+      FZF_DEFAULT_OPTS="$FZFSH_GIT_FZF_OPTS_SINGLE" fzf |
+      cut -c 3- |
       awk '{ print $1 }'
   )
   [[ -z "$branch" ]] && return 1
