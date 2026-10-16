@@ -374,8 +374,7 @@ function fzfsh::git::worktree_multi() {
   local worktrees=$(
     git worktree list |
       FZF_DEFAULT_OPTS="$opts" fzf |
-      awk '{ print $1 }' |
-      tr -d '\n'
+      awk '{ print $1 }'
   )
   [[ -z "$worktrees" ]] && return 1
 
