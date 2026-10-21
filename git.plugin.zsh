@@ -353,11 +353,9 @@ function fzfsh::git::switch() {
 function fzfsh::git::worktree_cd() {
   __fzfsh_git_inside_work_tree || return 1
 
-  local opts="$FZFSH_GIT_FZF_OPTS_SINGLE --header-lines=1"
-
   local worktree=$(
     git worktree list |
-      FZF_DEFAULT_OPTS="$opts" fzf |
+      FZF_DEFAULT_OPTS="$FZFSH_GIT_FZF_OPTS_SINGLE" fzf |
       awk '{ print $1 }' |
       tr -d '\n'
   )
