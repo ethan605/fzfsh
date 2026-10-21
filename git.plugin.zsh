@@ -396,6 +396,10 @@ alias gsh='git stash'
 alias gst='git status --short --untracked-files=all'
 alias gsync!='git fetch --prune upstream && git pull upstream $(gbM) --no-ff && git rebase upstream $(gbM)'
 
+if (( ${+commands[difft]} )); then
+  alias gdt='git -c diff.external=difft diff'
+fi
+
 # Default branch inference
 alias gbM='git symbolic-ref refs/remotes/origin/HEAD | cut -f4 -d/'
 alias grM='git rebase $(gbM)'
