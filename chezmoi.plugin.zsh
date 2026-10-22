@@ -3,6 +3,9 @@ if (( !${+commands[chezmoi]} )); then
   return 1
 fi
 
+PREVIEW_CMD='chezmoi diff $HOME/{}'
+PREVIEW_WINDOW='70%'
+
 function __fzfsh_chezmoi_parse() {
   local files=()
   while read -r item; do files+=("$HOME/$item"); done <<<"$1"
@@ -14,9 +17,11 @@ function fzfsh::chezmoi::re-add() {
   [[ -z "$options" ]] && return 1
 
   local files=()
-  local items=$(echo "$options" |
-    awk '{ print substr($0, 4) }' |
-    fzf --multi --preview="chezmoi diff $HOME/{} | delta")
+  local items=$(
+    echo "$options" |
+      awk '{ print substr($0, 4) }' |
+      fzf --multi --preview="$PREVIEW_CMD" --preview-window="$PREVIEW_WINDOW"
+  )
   [[ -z "$items" ]] && return 1
 
   while read -r item; do files+=("$HOME/$item"); done <<<"$items"
@@ -28,9 +33,11 @@ function fzfsh::chezmoi::apply() {
   [[ -z "$options" ]] && return 1
 
   local files=()
-  local items=$(echo "$options" |
-    awk '{ print substr($0, 4) }' |
-    fzf --multi --preview="chezmoi diff $HOME/{} | delta")
+  local items=$(
+    echo "$options" |
+      awk '{ print substr($0, 4) }' |
+      fzf --multi --preview="$PREVIEW_CMD" --preview-window="$PREVIEW_WINDOW"
+  )
   [[ -z "$items" ]] && return 1
 
   while read -r item; do files+=("$HOME/$item"); done <<<"$items"
@@ -62,10 +69,11 @@ function fzfsh::chezmoi::diff() {
     esac
   done
 
-  local cmd="chezmoi diff $addopts $HOME/{} | delta"
+  local cmd="chezmoi diff $addopts $HOME/{}"
+
   echo "$options" |
     awk '{ print substr($0, 4) }' |
-    fzf --bind="enter:execute($cmd --side-by-side --paging=always)" --preview="$cmd"
+    fzf --bind="enter:execute($cmd --side-by-side --paging=always)" --preview="$cmd" --preview-window="$PREVIEW_WINDOW"
 }
 
 # Regular aliases
