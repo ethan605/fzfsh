@@ -383,6 +383,7 @@ function fzfsh::git::worktree_multi() {
 alias g='git'
 alias gaa='git add --all'
 alias gau='git add --update'
+alias gcan!='git commit --amend --no-edit'
 alias gcl='git clone --recurse-submodules'
 alias gcm='git commit --message'
 alias gfl='git fetch --prune origin && git pull origin $(git branch --show-current)'
